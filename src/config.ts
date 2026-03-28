@@ -3,11 +3,19 @@ import fs from 'fs'
 export interface Config {
     mqtt: MqttConfig
     sia: SiaServerConfig
+    mtech: MTechConfig
     zones: [ZoneConfig]
 }
 
 export interface SiaServerConfig {
     port: number
+}
+
+export interface MTechConfig {
+    panelIp: string
+    panelPort: number
+    userPin: string
+    userIndex: number
 }
 
 export interface MqttConfig {

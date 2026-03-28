@@ -33,6 +33,11 @@ export class SIABlock {
         return buffer
     }
 
+    static createControlBlock(code: string, zone?: string): SIABlock {
+        const data = zone ? `${code}${zone}` : code
+        return new SIABlock(FunctionCodes.control, data)
+    }
+
     static fromBuffer(buffer: Buffer): SIABlock {
 
         try {

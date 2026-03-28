@@ -3,6 +3,7 @@ import { SiaServerConfig } from "../config"
 import { SIABlock } from "./siaBlock"
 import { FunctionCodes } from "../functionCodes"
 import { Event } from "../events/Event"
+import { CommandQueue } from "../commandQueue"
 import * as events from "events"
 
 const ACK_SIA_BLOCK = new SIABlock(FunctionCodes.acknowledge, "")
@@ -10,9 +11,12 @@ const ACK_SIA_BLOCK = new SIABlock(FunctionCodes.acknowledge, "")
 export class SIAServer extends events.EventEmitter {
 
     server: Server
+    private commandQueue: CommandQueue
 
-    constructor(config: SiaServerConfig) {
+    constructor(config: SiaServerConfig, commandQueue: CommandQueue) {
+
         super()
+        this.commandQueue = commandQueue
         this.server = createServer()
         this.server.on('connection', (socket: Socket) => this.handleConnection(socket))
         this.server.listen(config.port, () => this.listening())
@@ -44,11 +48,12 @@ export class SIAServer extends events.EventEmitter {
                 }
                 return
             }
-            
+
             // The function code will decide what we do next
             // We expect to receive the following sequence of funcCodes on each connection from the alarm panel:
             // account_id, new_event_data, ascii for each message
             // end_of_data when all messages for this connection have been sent
+            let sendAck = true
             switch (block.funcCode) {
                 case FunctionCodes.account_id:
                     accountId = block.data
@@ -83,13 +88,22 @@ export class SIAServer extends events.EventEmitter {
                     break
                 case FunctionCodes.end_of_data:
                     event = new Event()
+                    const cmd = emitter.commandQueue.dequeue()
+                    if (cmd) {
+                        const ctrlBlock = SIABlock.createControlBlock(cmd.code, cmd.zone)
+                        socket.write(ctrlBlock.toBuffer())
+                        console.log(`${Date().toLocaleString()} Sent SIA control command: ${cmd.code}`)
+                        sendAck = false
+                    }
                     break;
                 default:
                     console.log(`${Date().toLocaleString()} Unhandled funcCode: ${FunctionCodes[block.funcCode]}`)
                     break
 
             }
-            socket.write(ACK_SIA_BLOCK.toBuffer())
+            if (sendAck) {
+                socket.write(ACK_SIA_BLOCK.toBuffer())
+            }
         }
         socket.on('data', handleData)
     }

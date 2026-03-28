@@ -12,7 +12,8 @@ enum subTopics {
 enum setState {
     UNSET = "Unset",
     FULL = "Full Set",
-    PART = "Part Set"
+    PART = "Part Set",
+    NIGHT = "Night Set"
 }
 
 interface ParsedEvent {
@@ -48,8 +49,14 @@ function parseSystemEvent(event: Event): ParsedEvent {
             parsedEvent.alarmState = false
             break
         case "CG":
+        case "CP":
             parsedEvent.text = "Part Set"
             parsedEvent.setState = setState.PART
+            parsedEvent.alarmState = false
+            break
+        case "CN":
+            parsedEvent.text = "Night Set"
+            parsedEvent.setState = setState.NIGHT
             parsedEvent.alarmState = false
             break
         // Cancel / reset events

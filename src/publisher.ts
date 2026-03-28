@@ -5,8 +5,10 @@ import { MqttConfig, Zones } from "./config"
 export class Publisher {
 
     mqttClient: AsyncMqttClient;
+    private commandTopic: string;
 
     constructor(private config: MqttConfig, private zones: Zones) {
+        this.commandTopic = `${config.baseTopic}/alarm/command`;
         const options = {
             will: {
                 topic: `${config.baseTopic}/bridge/availability`,
@@ -121,6 +123,27 @@ export class Publisher {
             }
         ]
 
+        // The alarm_control_panel entity for arm/disarm from Home Assistant
+        // Four buttons: ARM_AWAY (volledig), ARM_HOME (deel), ARM_NIGHT (nacht), DISARM (uit)
+        let alarmEntity = {
+            availability: availability,
+            device: device,
+            name: "Alarm",
+            state_topic: `${this.config.baseTopic}/alarm/state`,
+            command_topic: `${this.config.baseTopic}/alarm/command`,
+            payload_arm_away: "arm_away",
+            payload_arm_home: "arm_home",
+            payload_arm_night: "arm_night",
+            payload_disarm: "disarm",
+            state_disarmed: "disarmed",
+            state_armed_away: "armed_away",
+            state_armed_home: "armed_home",
+            state_armed_night: "armed_night",
+            state_triggered: "triggered",
+            unique_id: "sia2mqtt4ha_alarmpanel_alarm",
+            platform: "alarm_control_panel"
+        }
+
         // Add the Zone entities (as defined in the config file)
         let zoneEntities=[]
         for(let i in this.zones){
@@ -155,6 +178,10 @@ export class Publisher {
         try {
             // Set our bridge availability to online
             await this.publish("bridge/availability", "online", true)
+
+            // Advertise the alarm_control_panel entity
+            let alarmDiscoveryTopic = `${this.config.discoveryTopic}/alarm_control_panel/${alarmEntity.unique_id}/config`
+            await this.publishJSONdiscovery(alarmDiscoveryTopic, alarmEntity, true)
 
             // Advertise the presence of all standard entities so they can be discovered
             for (let entity in statusEntities) {
@@ -200,5 +227,25 @@ export class Publisher {
         } catch (error) {
             throw `publishJSONdiscovery() error ${error}`
         }
+    }
+
+    public async publishAlarmState(state: string): Promise<void> {
+        try {
+            await this.mqttClient.publish(`${this.config.baseTopic}/alarm/state`, state,
+                {retain: true} as IClientPublishOptions)
+        } catch (error) {
+            throw `publishAlarmState() error ${error}`
+        }
+    }
+
+    public subscribeToCommand(callback: (command: string) => void): void {
+        this.mqttClient.subscribe(this.commandTopic).catch((error) => {
+            console.log(`${Date().toLocaleString()} Failed to subscribe to command topic: ${error}`)
+        })
+        this.mqttClient.on('message', (topic: string, message: Buffer) => {
+            if (topic === this.commandTopic) {
+                callback(message.toString())
+            }
+        })
     }
 }
