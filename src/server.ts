@@ -59,7 +59,9 @@ siaServer.on("SystemEvent", async function (event: Event) {
     const alarmState = ALARM_STATE_MAP[event.code]
     if (alarmState) {
         await publisher.publishAlarmState(alarmState)
+        await publisher.publishAlarmStateSensors(alarmState)
     }
+    await publisher.publishJSON("event_text", { text: event.text, time: event.time }, true)
 })
 
 // All events: publish raw event data to $baseTopic/event

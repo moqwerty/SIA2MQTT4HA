@@ -50,7 +50,7 @@ export class Publisher {
             name: "AlarmPanel",
             manufacturer: "SIA2MQTT4HA",
             model: "SIA2MQTT4HA App",
-            sw_version: "0.2"
+            sw_version: "0.3.1"
         }
 
         // These are the standard entities: set_status, alarm_status, comms_test and event
@@ -120,6 +120,70 @@ export class Publisher {
                 icon: "mdi:flag",
                 platform: "sensor",
                 entity_category: "diagnostic"
+            },
+            { // Binary sensor: fully armed
+                availability: availability,
+                device: device,
+                state_topic: `${this.config.baseTopic}/state_armed_away`,
+                name: "Armed Away",
+                type: "binary_sensor",
+                unique_id: "sia2mqtt4ha_alarmpanel_state_armed_away",
+                value_template: '{{ value_json.state }}',
+                payload_on: true,
+                payload_off: false,
+                icon: "mdi:shield-lock",
+                platform: "binary_sensor"
+            },
+            { // Binary sensor: night armed
+                availability: availability,
+                device: device,
+                state_topic: `${this.config.baseTopic}/state_armed_night`,
+                name: "Armed Night",
+                type: "binary_sensor",
+                unique_id: "sia2mqtt4ha_alarmpanel_state_armed_night",
+                value_template: '{{ value_json.state }}',
+                payload_on: true,
+                payload_off: false,
+                icon: "mdi:shield-moon",
+                platform: "binary_sensor"
+            },
+            { // Binary sensor: partially armed
+                availability: availability,
+                device: device,
+                state_topic: `${this.config.baseTopic}/state_armed_home`,
+                name: "Armed Home",
+                type: "binary_sensor",
+                unique_id: "sia2mqtt4ha_alarmpanel_state_armed_home",
+                value_template: '{{ value_json.state }}',
+                payload_on: true,
+                payload_off: false,
+                icon: "mdi:shield-half-full",
+                platform: "binary_sensor"
+            },
+            { // Binary sensor: disarmed
+                availability: availability,
+                device: device,
+                state_topic: `${this.config.baseTopic}/state_disarmed`,
+                name: "Disarmed",
+                type: "binary_sensor",
+                unique_id: "sia2mqtt4ha_alarmpanel_state_disarmed",
+                value_template: '{{ value_json.state }}',
+                payload_on: true,
+                payload_off: false,
+                icon: "mdi:shield-off",
+                platform: "binary_sensor"
+            },
+            { // Entity representing the human-readable event text including user info
+                availability: availability,
+                device: device,
+                state_topic: `${this.config.baseTopic}/event_text`,
+                json_attributes_topic: `${this.config.baseTopic}/event_text`,
+                name: "Event Text",
+                type: "sensor",
+                unique_id: "sia2mqtt4ha_alarmpanel_event_text",
+                value_template: '{{ value_json.text }}',
+                icon: "mdi:text",
+                platform: "sensor"
             }
         ]
 
@@ -131,6 +195,7 @@ export class Publisher {
             name: "Alarm",
             state_topic: `${this.config.baseTopic}/alarm/state`,
             command_topic: `${this.config.baseTopic}/alarm/command`,
+            json_attributes_topic: `${this.config.baseTopic}/alarm/attributes`,
             payload_arm_away: "arm_away",
             payload_arm_home: "arm_home",
             payload_arm_night: "arm_night",
@@ -140,6 +205,8 @@ export class Publisher {
             state_armed_home: "armed_home",
             state_armed_night: "armed_night",
             state_triggered: "triggered",
+            code_arm_required: false,
+            code_disarm_required: false,
             unique_id: "sia2mqtt4ha_alarmpanel_alarm",
             platform: "alarm_control_panel"
         }
@@ -229,12 +296,29 @@ export class Publisher {
         }
     }
 
+    public async publishAlarmStateSensors(alarmState: string): Promise<void> {
+        const states = ["armed_away", "armed_night", "armed_home", "disarmed"]
+        for (const s of states) {
+            await this.publishJSON(`state_${s}`, { state: alarmState === s }, true)
+        }
+    }
+
     public async publishAlarmState(state: string): Promise<void> {
         try {
             await this.mqttClient.publish(`${this.config.baseTopic}/alarm/state`, state,
                 {retain: true} as IClientPublishOptions)
         } catch (error) {
             throw `publishAlarmState() error ${error}`
+        }
+    }
+
+    public async publishAlarmAttributes(text: string, time: string, code: string): Promise<void> {
+        try {
+            await this.mqttClient.publish(`${this.config.baseTopic}/alarm/attributes`,
+                JSON.stringify({ last_event: text, last_event_time: time, last_event_code: code }),
+                {retain: true} as IClientPublishOptions)
+        } catch (error) {
+            throw `publishAlarmAttributes() error ${error}`
         }
     }
 

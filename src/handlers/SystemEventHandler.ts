@@ -173,12 +173,12 @@ function parseSystemEvent(event: Event): ParsedEvent {
     return parsedEvent
 }
 
-export async function handleSystemEvent(rawEvent: Event, publisher: Publisher): Promise<any> {
+export async function handleSystemEvent(rawEvent: Event, publisher: Publisher): Promise<string | undefined> {
     let event = parseSystemEvent(rawEvent)
 
     // Ignore ignored events
     if (event == undefined) {
-        return
+        return undefined
     }
 
     // If an event has triggered the alarm
@@ -222,6 +222,8 @@ export async function handleSystemEvent(rawEvent: Event, publisher: Publisher): 
             status: event.text,
             time: event.time
         })
+
+    return event.text
 }
 
 export async function sendInitialSystemEventState(publisher: Publisher): Promise<any> {

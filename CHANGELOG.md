@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0 - 0.3.1
+
+- Added `sensor.alarmpanel_event_text` — raw ASCII event text as received from the panel (e.g. "FULL SET", "UNSET")
+- Added four alarm state binary sensors: `armed_away`, `armed_night`, `armed_home`, `disarmed`
+
+## 0.2.1 - 0.3.0
+
+- Added direct MTech arm/disarm control via TCP port 10001 (no SIA Level 4 required)
+- Added four alarm modes: arm_away (full), arm_home (partial), arm_night, disarm
+- Panel PIN and user index stored in add-on config — no code entry required in Home Assistant
+- Updated alarm_control_panel entity discovery with new payload and state names
+- Added mtech section to add-on configuration schema
+
+
 ## 0.1.11 - 0.1.12
 
 - Fixed Home Assistant discovery topic.

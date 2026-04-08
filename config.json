@@ -1,8 +1,9 @@
 {
     "name": "SIA2MQTT4HA",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "slug": "sia2mqtt4ha",
     "description": "Service that acts as an alarm receiving centre for Honeywell Flex alarm panels",
+    "url": "https://github.com/666djb/SIA2MQTT4HA",
     "arch": [
         "armhf",
         "armv7",
@@ -31,7 +32,7 @@
             "port": 10002
         },
         "mtech": {
-            "panelIp": "192.168.1.4",
+            "panelIp": "192.168.x.x",
             "panelPort": 10001,
             "userPin": "",
             "userIndex": 1
